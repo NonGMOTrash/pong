@@ -1,19 +1,18 @@
-#include <iostream>
+#include <string>
 #include <algorithm>
 #include "raylib.h"
+#include "game.h"
 
-using std::cout;
-using std::endl;
 using std::min;
 using std::max;
 
+enum GameState {
+	TITLE,
+	GAME
+};
+
 const int GAME_WIDTH = 384;
 const int GAME_HEIGHT = 216;
-
-struct Entity 
-{
-
-};
 
 int main()
 {
@@ -27,16 +26,11 @@ int main()
 	RenderTexture2D frame = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 	float frameScale = 0.0f;
 
+	// int gameState = GAME; // currently unused
+
 	while (!WindowShouldClose())
 	{
-		// draw frame
-		BeginTextureMode(frame);
-		{
-			ClearBackground(BLACK);
-
-			DrawText("hi", 50, 50, 50, BLUE);
-		}
-		EndTextureMode();
+		Process(frame);
 
 		// draw final frame (with letterboxing)
 		window_width = GetScreenWidth();
@@ -45,8 +39,7 @@ int main()
 
 		BeginDrawing();
 		{
-			ClearBackground(PINK);
-			DrawText("hi", 50, 50, 50, RED);
+			ClearBackground(BLACK);
 
 			DrawTexturePro(
 					frame.texture, // texture
@@ -57,8 +50,8 @@ int main()
 						(float)frame.texture.height * -1
 					},
 					(Rectangle){ // dest
-						(GetScreenWidth() - (float)GAME_WIDTH * frameScale) * 0.5f,
-						(GetScreenHeight() - (float)GAME_HEIGHT * frameScale) * 0.5f,
+						(window_width - (float)GAME_WIDTH * frameScale) * 0.5f,
+						(window_height - (float)GAME_HEIGHT * frameScale) * 0.5f,
 						(float)GAME_WIDTH * frameScale,
 						(float)GAME_HEIGHT * frameScale 
 					},
@@ -66,27 +59,12 @@ int main()
 					0.0f, // rotation
 					WHITE // tint
 			);
-
-			/* the model */
-			// DrawTexturePro(
-			// 	render_texture.texture,
-			// 	(Rectangle){
-			// 		0.0f,
-			// 		0.0f,
-			// 		(float)render_texture.texture.width,
-			// 		(float)-render_texture.texture.height
-			// 	},
-			// 	(Rectangle){
-			// 		(GetScreenWidth() - ((float)viewport_width*scale))*0.5f,
-			// 		(GetScreenHeight() - ((float)viewport_height*scale))*0.5f,
-			// 		(float)viewport_width*scale,
-			// 		(float)viewport_height*scale
-			// 	},
-			// 	(Vector2){ 0, 0 }, 0.0f, WHITE
-			// );
 		}
 		EndDrawing();
+
 	}
 
 	CloseWindow();
+
+	return 0;
 }
