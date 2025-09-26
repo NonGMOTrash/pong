@@ -3,11 +3,11 @@ COMP = g++
 # compilation flags
 FLAGS = -std=c++14 -g -I include/ -L lib/ -lraylib -lgdi32 -lwinmm
 
-# \/ target   \/ prerequsites
-all: game.exe
+all: a.exe
 
-game.exe: main.cpp game.cpp
-	${COMP} $^ -o game.exe ${FLAGS}
+# \/ target   \/ prerequsites
+a.exe: main.cpp game.cpp
+	${COMP} $^ -o a.exe ${FLAGS}
 #IMPORTANT /\ automatically adds all the prereqs listed above
 
 main.o: main.cpp

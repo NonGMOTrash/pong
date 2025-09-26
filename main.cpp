@@ -28,9 +28,11 @@ int main()
 
 	// int gameState = GAME; // currently unused
 
+	Init();
+
 	while (!WindowShouldClose())
 	{
-		Process(frame);
+		Update(frame);
 
 		// draw final frame (with letterboxing)
 		window_width = GetScreenWidth();
