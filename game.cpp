@@ -7,29 +7,32 @@ enum Shape {
 };
 
 enum EntityTag {
-	BALL = 0,
+	BALL,
 	PLAYER
 };
+
 
 struct Entity 
 {
 	Vector2 position;
 	Vector2 velocity;
 	Shape shape;
+	float width;
+	float height;
+	float rotation;
+	Color color;
 	EntityTag tag;
 
 	Entity();
 };
 
-
-Entity::Entity()
-	: position((Vector2){0.0f,0.0f}), velocity((Vector2){0.0f,0.0f}), shape(RECT), tag(PLAYER)
-{}
-
 const int ENTITY_CAP = 16;
 int entity_count = 0;
 Entity* entities[ENTITY_CAP];
 
+Entity::Entity()
+	: position((Vector2){0.0f,0.0f}), velocity((Vector2){0.0f,0.0f}), shape(RECT), width(1.0f), height(1.0f), rotation(1.0f), color(RAYWHITE), tag(PLAYER)
+{}
 
 void SpawnEntity(Entity* new_entity)
 {
@@ -39,13 +42,25 @@ void SpawnEntity(Entity* new_entity)
 
 void DrawEntity(Entity* entity)
 {
-	char letter = '_';
-	if      (entity->tag == BALL)
-		letter = 'b';
-	else if (entity->tag == PLAYER)
-		letter = 'p';
-
-	DrawText(TextFormat("%c", letter), entity->position.x, entity->position.y, 16, WHITE);
+	if (entity->shape == RECT)
+	{
+		DrawRectanglePro(
+				(Rectangle){entity->position.x, entity->position.y, entity->width, entity->height},
+				(Vector2){0.0f, 0.0f},
+				entity->rotation,
+				entity->color
+			);
+	}
+	else if (entity->shape == ELLIPSE)
+	{
+		DrawEllipse(
+				entity->position.x,
+				entity->position.y,
+				entity->width,
+				entity->height,
+				entity->color
+			);
+	}
 }
 
 void PlayerControl(Entity* player)
@@ -78,18 +93,19 @@ void Init()
 {
 	Entity* test_entity = new Entity;
 	test_entity->position = (Vector2){50.0f, 50.0f};
+	test_entity->width = 20.0f;
+	test_entity->height = 10.0f;
 	test_entity->tag = BALL;
 	SpawnEntity(test_entity);
 
 	Entity* player = new Entity;
 	player->position = (Vector2){10.0f, 10.0f};
+	player->shape = ELLIPSE;
+	player->width = 8.0f;
+	player->height = 8.0f;
+	player->color = ORANGE;
 	player->tag = PLAYER;
 	SpawnEntity(player);
-
-	for (int i = 0; i < entity_count; i++)
-	{
-		TraceLog(LOG_INFO, TextFormat("%i", entities[i]->tag));
-	}
 }
 
 void Update(const RenderTexture2D& frame)
@@ -106,6 +122,7 @@ void Update(const RenderTexture2D& frame)
 			}
 
 			DrawEntity(entities[i]);
+			entities[i]->rotation += 1;
 		}
 	}
 	EndTextureMode();
