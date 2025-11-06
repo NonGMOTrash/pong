@@ -1,7 +1,7 @@
 # compiler
 COMP = g++
 # compilation flags
-FLAGS = -std=c++14 -g -I include/ -L lib/ -lraylib -lgdi32 -lwinmm
+FLAGS = -std=c++11 -g -I include/ -L lib/ -lraylib -lgdi32 -lwinmm
 
 all: a.exe
 

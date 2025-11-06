@@ -1,6 +1,7 @@
 #include <string>
 #include <algorithm>
 #include "raylib.h"
+#include "main.h"
 #include "game.h"
 
 using std::min;

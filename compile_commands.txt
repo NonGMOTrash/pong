@@ -1,0 +1,11 @@
+g++ 
+-std=c++11
+-g 
+-I 
+include/ 
+-L lib/ 
+-lraylib 
+-lgdi32 
+-lwinmm
+main.cpp
+game.cpp
