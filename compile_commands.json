@@ -1,0 +1,22 @@
+[
+ {
+  "directory": "C:\\Users\\grant\\Projects\\pong\\source",
+  "arguments": [
+   "clang++",
+   "main.cpp",
+   "game.cpp",
+   "-o",
+   "a.exe",
+   "-std=c++17",
+   "-g",
+   "-I",
+   "include/",
+   "-L",
+   "lib/",
+   "-lraylib",
+   "-lgdi32",
+   "-lwinmm"
+  ],
+  "file": "game.cpp"
+ }
+]
