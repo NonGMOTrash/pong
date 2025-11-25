@@ -1,6 +1,7 @@
 #include <string>
 #include <algorithm>
 #include "raylib.h"
+#include "raymath.h"
 #include "main.h"
 #include "game.h"
 
@@ -15,6 +16,12 @@ enum GameState {
 const int GAME_WIDTH = 384;
 const int GAME_HEIGHT = 216;
 
+// gets proj_v(u) or, the component of v in the direction of u
+Vector2 Vector2Project(const Vector2& v, const Vector2& u)
+{
+	return v * ( Vector2DotProduct(v, u) / Vector2DotProduct(v, v) );
+}
+
 int main()
 {
 	int window_width = GAME_WIDTH * 2;
@@ -27,7 +34,7 @@ int main()
 	RenderTexture2D frame = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 	float frameScale = 0.0f;
 
-	// int gameState = GAME; // currently unused
+	// int gameState = GAME;
 
 	Init();
 

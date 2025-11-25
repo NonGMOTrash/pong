@@ -1,8 +1,8 @@
 #if !defined(MAIN_H)
 #define MAIN_H 1
 
-#include "raylib.h"
+#include "raymath.h"
 
-extern const Vector2 VEC2_ZERO;
+Vector2 Vector2Project(const Vector2& v, const Vector2& u);
 
 #endif
