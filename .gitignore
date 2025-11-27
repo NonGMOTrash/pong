@@ -1,3 +1,7 @@
+.cache/
+
+# ---- DEFAULT STUFF FROM GITHUB -----
+
 # Prerequisites
 *.d
 
