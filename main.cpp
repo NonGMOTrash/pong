@@ -29,7 +29,7 @@ int main()
 
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 	InitWindow(window_width, window_height, "pong 'v'");
-	SetTargetFPS(60);
+	SetTargetFPS(240);
 
 	RenderTexture2D frame = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
 	float frameScale = 0.0f;
