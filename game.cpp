@@ -56,7 +56,7 @@ struct Entity
 			Color new_color = BLACK,
 			float new_static_friction = 0.1f,
 			float new_kinetic_friction = 0.2f,
-			float new_bounciness = 0.5f
+			float new_bounciness = 0.2f // the proportion of the velocity during the collision that's converted to bounce
 		)
 		: tag(new_tag)
 		, top_speed(new_top_speed)
@@ -106,7 +106,8 @@ struct Ball : public Entity
 				true, // IS_SOLID
 				WHITE, // COLOR
 				0.2f, // STATIC_FRICTION
-				0.1f // KINETIC_FRICTION
+				0.1f, // KINETIC_FRICTION
+				0.9f // BOUNCINESS
 			)
 	{}
 };
@@ -202,12 +203,19 @@ void MoveEntity(Entity* ent)
 				Vector2 dir = Vector2Normalize(ent->position - otherEnt->position);
 				displacement += dir * min_displace_dist;
 
-				ent->velocity += dir * ( ent->bounciness ); 
+				ent->velocity += dir * ( ent->bounciness ) * Vector2Length(ent->velocity); 
+				otherEnt->velocity += dir * -1 * ( otherEnt->bounciness ) * Vector2Length(ent->velocity); 
 			}
 		}
 	}
 
 	ent->position += displacement;
+}
+
+void WrapEntityPosition(Entity* ent)
+{
+	ent->position.x = Wrap(ent->position.x, -ent->size.x, GAME_WIDTH + ent->size.x);
+	ent->position.y = Wrap(ent->position.y, -ent->size.y, GAME_HEIGHT + ent->size.y);
 }
 
 void PlayerControl(Player* player)
@@ -277,6 +285,11 @@ void Update(const RenderTexture2D& frame)
 		}
 
 		MoveEntity(ent);
+
+		if (ent->tag == BALL)
+		{
+			WrapEntityPosition(ent);
+		}
 	}
 
 
