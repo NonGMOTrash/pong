@@ -1,15 +1,12 @@
 #include "raylib.h"
 #include "raymath.h"
-#include "game.h"
+#include "main.h"
 #include <iostream>
 
 using namespace std;
 
-const int GAME_WIDTH = 384;
-const int GAME_HEIGHT = 216;
-
-const Vector2 VECTOR2_CENTER = (Vector2){(float)GAME_WIDTH / 2, (float)GAME_HEIGHT / 2};
-const float STATIC_FRICTION_THRESHOLD = 0.03f;
+const Vector2 center_position = (Vector2){(float)game_width / 2, (float)game_height / 2};
+const float static_friction_threshold = 0.03f;
 
 enum Shape {
 	NONE = -1,
@@ -25,38 +22,37 @@ enum EntityTag {
 struct Entity
 {
 	const EntityTag tag;
-	const float top_speed; // in px/sec 
-	const float acceleration; // in px/sec^2
-	const Shape shape;
-	const Vector2 size;
-	const bool is_solid; // has collision
-	const Color color;
-	const float static_friction;
-	const float kinetic_friction; 
-	const float bounciness;
+	float top_speed; // in px/sec 
+	float acceleration; // in px/sec^2
+	Shape shape;
+	Vector2 size;
+	bool is_solid; // has collision
+	Color tint;
+	float static_friction;
+	float kinetic_friction; 
+	float bounciness; // proportion of other object's velocity that's converted into a collision force
 
-	Vector2 position = VECTOR2_CENTER;
+	Vector2 position = center_position;
 	Vector2 velocity = Vector2Zeros;
 	Vector2 input = Vector2Zeros;
-	float rotation = 0; // TODO: not implemented
+	float rotation = 0;
 	Vector2 scale = Vector2One();
 
 	Entity() = delete; // disallows default constructor
 	// this is to force the mega constructor below to be used
 	// TODO: is this actually necessary?
 
-	// ctor only sets values
 	Entity(
 			EntityTag new_tag = BALL,
-			float new_top_speed = 0.01f,
-			float new_acceleration = 0.01f,
+			float new_top_speed = 100,
+			float new_acceleration = 1000,
 			Shape new_shape = ELLIPSE,
 			Vector2 new_size = Vector2One(),
 			bool new_is_solid = false,
-			Color new_color = BLACK,
-			float new_static_friction = 0.1f,
-			float new_kinetic_friction = 0.2f,
-			float new_bounciness = 0.2f // the proportion of the velocity during the collision that's converted to bounce
+			Color new_tint = BLACK,
+			float new_static_friction = 1000,
+			float new_kinetic_friction = 100,
+			float new_bounciness = 0.2f
 		)
 		: tag(new_tag)
 		, top_speed(new_top_speed)
@@ -64,7 +60,7 @@ struct Entity
 		, shape(new_shape)
 		, size(new_size)
 		, is_solid(new_is_solid)
-		, color(new_color)
+		, tint(new_tint)
 		, static_friction(new_static_friction)
 		, kinetic_friction(new_kinetic_friction)
 		, bounciness(new_bounciness)
@@ -73,8 +69,10 @@ struct Entity
 
 struct Player : public Entity
 {
-	const float dash_cooldown_duration = 0.5f;
-	const float dash_strength = 500;
+	const float friction_moving = 300;
+	const float friction_still = 1400;
+	const float dash_cooldown_duration = 0.3f;
+	const float dash_strength = 750;
 
 	float dash_cooldown = 0;
 
@@ -82,13 +80,13 @@ struct Player : public Entity
 		: Entity(
 				PLAYER, // TAG
 				200, // TOP_SPEED 
-				1000, // ACCELERATION
+				1500, // ACCELERATION
 				ELLIPSE, // SHAPE
 				(Vector2){8, 8}, // SIZE
 				true, // IS_SOLID
 				ORANGE, // COLOR
-				1.0f, // STATIC_FRICTION
-				0.5f, // KINETIC_FRICTION
+				0, // STATIC_FRICTION
+				800, // KINETIC_FRICTION
 				0.5f // BOUNCINESS
 			)
 	{}
@@ -105,17 +103,17 @@ struct Ball : public Entity
 				(Vector2){10, 10}, // SIZE
 				true, // IS_SOLID
 				WHITE, // COLOR
-				0.2f, // STATIC_FRICTION
-				0.1f, // KINETIC_FRICTION
+				1000, // STATIC_FRICTION
+				100, // KINETIC_FRICTION
 				0.9f // BOUNCINESS
 			)
 	{}
 };
 
 
-const int ENTITY_CAP = 64;
-int entity_count = 0;
-Entity* entities[ENTITY_CAP];
+static const int ENTITY_CAP = 64;
+static int entity_count = 0;
+static Entity* entities[ENTITY_CAP];
 
 void SpawnEntity(Entity* ent, Vector2 spawn_pos = Vector2Zeros, Vector2 initial_velocity = Vector2Zeros)
 {
@@ -138,7 +136,7 @@ void DrawEntity(Entity* ent)
 				(Rectangle){ent->position.x, ent->position.y, ent->size.x, ent->size.y},
 				(Vector2){0.0f, 0.0f},
 				ent->rotation,
-				ent->color
+				ent->tint
 			);
 	}
 	else if (ent->shape == ELLIPSE)
@@ -148,25 +146,29 @@ void DrawEntity(Entity* ent)
 				ent->position.y,
 				ent->size.x * ent->scale.x,
 				ent->size.y * ent->scale.y,
-				ent->color
+				ent->tint
 			);
 	}
 }
 
 void MoveEntity(Entity* ent)
 {
-	// apply friction
-	if (Vector2Length(ent->velocity) < STATIC_FRICTION_THRESHOLD)
+	// apply input acceleration (respects top_speed)
+	ent->input = Vector2Normalize(ent->input);
+	if (Vector2Length(ent->input) != 0)
 	{
-		Vector2MoveTowards(ent->velocity, Vector2Zeros, ent->static_friction * GetFrameTime());
-	}
-	else {
-		Vector2MoveTowards(ent->velocity, Vector2Zeros, ent->kinetic_friction * GetFrameTime());
+		ent->velocity = Vector2MoveTowards(ent->velocity, ent->input * ent->top_speed, ent->acceleration * GetFrameTime());
 	}
 
-	// apply acceleration (respects top_speed)
-	ent->input = Vector2Normalize(ent->input);
-	ent->velocity = Vector2MoveTowards(ent->velocity, ent->input * ent->top_speed, ent->acceleration * GetFrameTime());
+	// === apply friction ===
+	// NOTE: Vector2MoveTowards does not do anything if the target vector is (0,0) so i can't use it here
+	float friction_strength = ent->kinetic_friction;
+	if (Vector2Length(ent->velocity) < static_friction_threshold)
+	{
+		friction_strength = ent->static_friction;
+	}
+	Vector2 friction_vector = Vector2Normalize(ent->velocity) * -1 * friction_strength * GetFrameTime();
+	ent->velocity += friction_vector;
 
 	// actually move
 	ent->position += ent->velocity * GetFrameTime();
@@ -203,7 +205,7 @@ void MoveEntity(Entity* ent)
 				Vector2 dir = Vector2Normalize(ent->position - otherEnt->position);
 				displacement += dir * min_displace_dist;
 
-				ent->velocity += dir * ( ent->bounciness ) * Vector2Length(ent->velocity); 
+				ent->velocity += dir * ( ent->bounciness ) * Vector2Length(otherEnt->velocity); 
 				otherEnt->velocity += dir * -1 * ( otherEnt->bounciness ) * Vector2Length(ent->velocity); 
 			}
 		}
@@ -214,13 +216,14 @@ void MoveEntity(Entity* ent)
 
 void WrapEntityPosition(Entity* ent)
 {
-	ent->position.x = Wrap(ent->position.x, -ent->size.x, GAME_WIDTH + ent->size.x);
-	ent->position.y = Wrap(ent->position.y, -ent->size.y, GAME_HEIGHT + ent->size.y);
+	ent->position.x = Wrap(ent->position.x, -ent->size.x, game_width + ent->size.x);
+	ent->position.y = Wrap(ent->position.y, -ent->size.y, game_height + ent->size.y);
 }
 
 void PlayerControl(Player* player)
 {
-	// # setting input vector
+	// setting input vector
+	// NOTE: the actual movement happens in MoveEntity
 
 	if (IsKeyDown(KEY_D))
 	{
@@ -250,7 +253,17 @@ void PlayerControl(Player* player)
 
 	player->input = Vector2Normalize(player->input);
 
-	// # dashing
+	// adjusting friction
+	
+	if (Vector2Length(player->input) != 0)
+	{
+		player->kinetic_friction = player->friction_moving;
+	}
+	else {
+		player->kinetic_friction = player->friction_still;
+	}
+
+	// dashing
 
 	player->dash_cooldown -= GetFrameTime();
 
@@ -265,16 +278,15 @@ void PlayerControl(Player* player)
 
 void Init()
 {
-	SpawnEntity(new Player, VECTOR2_CENTER);
+	SpawnEntity(new Player, center_position);
 	SpawnEntity(new Ball, (Vector2){100, 100});
 }
 
 void Update(const RenderTexture2D& frame)
 {
-	// # game logic
+	// ========= game logic ==========
 
-	// ## movement
-
+	// entity movements
 	for (int i = 0; i < entity_count; i++)
 	{
 		Entity*& ent = entities[i];
@@ -286,25 +298,24 @@ void Update(const RenderTexture2D& frame)
 
 		MoveEntity(ent);
 
-		if (ent->tag == BALL)
-		{
-			WrapEntityPosition(ent);
-		}
+		WrapEntityPosition(ent);
 	}
 
 
-	// # rendering
+	// =========== rendering ===========
 
 	BeginTextureMode(frame);
 	{
 		ClearBackground(PINK);
 
-		// ## drawing entities
+		// drawing entities
 		for (int i = 0; i < entity_count; i++)
 		{
 			Entity*& ent = entities[i];
 			DrawEntity(ent);
 		}
+
+		DrawFPS(3, 3);
 	}
 	EndTextureMode();
 }

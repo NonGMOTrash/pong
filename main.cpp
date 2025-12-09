@@ -1,38 +1,39 @@
-#include <string>
-#include <algorithm>
 #include "raylib.h"
 #include "raymath.h"
-#include "main.h"
 #include "game.h"
+#include <algorithm>
+#include <iostream>
+#include "main.h"
 
-using std::min;
-using std::max;
-
+using namespace std;
+ 
 enum GameState {
 	TITLE,
 	GAME
 };
 
-const int GAME_WIDTH = 384;
-const int GAME_HEIGHT = 216;
-
-// gets proj_v(u) or, the component of v in the direction of u
-Vector2 Vector2Project(const Vector2& v, const Vector2& u)
+float MoveValueTowards(const float value, const float to, const float step)
 {
-	return v * ( Vector2DotProduct(v, u) / Vector2DotProduct(v, v) );
+	float new_value = value;
+	if (value < to)
+	{
+		new_value += step;
+		return Clamp(new_value, value, to);
+	}
+	else {
+		new_value -= step;
+		return Clamp(new_value, to, value);
+	}
 }
 
 int main()
 {
-	int window_width = GAME_WIDTH * 2;
-	int window_height = GAME_WIDTH * 2;
-
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-	InitWindow(window_width, window_height, "pong 'v'");
+	InitWindow(game_width * 2, game_height * 2, "pong 'v'");
 	SetTargetFPS(240);
 
-	RenderTexture2D frame = LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT);
-	float frameScale = 0.0f;
+	RenderTexture2D frame = LoadRenderTexture(game_width, game_height);
+	float frame_scale = 0.0f;
 
 	// int gameState = GAME;
 
@@ -43,9 +44,7 @@ int main()
 		Update(frame);
 
 		// draw final frame (with letterboxing)
-		window_width = GetScreenWidth();
-		window_height = GetScreenHeight();
-		frameScale = min((float)window_width / GAME_WIDTH, (float)window_height / GAME_HEIGHT);
+		frame_scale = min((float)GetScreenWidth() / game_width, (float)GetScreenHeight() / game_height);
 
 		BeginDrawing();
 		{
@@ -60,10 +59,10 @@ int main()
 						(float)frame.texture.height * -1
 					},
 					(Rectangle){ // dest
-						(window_width - (float)GAME_WIDTH * frameScale) * 0.5f,
-						(window_height - (float)GAME_HEIGHT * frameScale) * 0.5f,
-						(float)GAME_WIDTH * frameScale,
-						(float)GAME_HEIGHT * frameScale 
+						(GetScreenWidth() - (float)game_width * frame_scale) * 0.5f,
+						(GetScreenHeight() - (float)game_height * frame_scale) * 0.5f,
+						(float)game_width * frame_scale,
+						(float)game_height * frame_scale 
 					},
 					(Vector2){0,0}, // origin
 					0.0f, // rotation

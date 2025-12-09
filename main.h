@@ -3,6 +3,9 @@
 
 #include "raymath.h"
 
-Vector2 Vector2Project(const Vector2& v, const Vector2& u);
+inline constexpr int game_width = 16*30;
+inline constexpr int game_height = 9*30;
+
+float MoveValueTowards(const float value, const float to, const float step);
 
 #endif
